@@ -15,10 +15,11 @@ public final class Util {
 
     private Util() {}
 
-    public static Connection getConnection() throws SQLException {
+    public static Connection getConnection() {
         try {
             return DriverManager.getConnection(URL, USER, PASSWORD);
         } catch (SQLException e) {
+            System.out.println("Не удалось установить соединение с базой данных: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -27,6 +28,7 @@ public final class Util {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
+            System.out.println("Ошибка при загрузке класса Driver: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }

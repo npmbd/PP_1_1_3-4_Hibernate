@@ -2,10 +2,7 @@ package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +24,7 @@ public class UserDaoJDBCImpl implements UserDao {
             """;
             statement.executeUpdate(sql);
         } catch (SQLException e) {
-            throw  new RuntimeException(e);
+            System.out.println("SQLException при создании таблицы: " + e.getMessage());
         }
     }
 
@@ -39,46 +36,50 @@ public class UserDaoJDBCImpl implements UserDao {
                 """;
             statement.executeUpdate(sql);
         } catch (SQLException e) {
-            throw  new RuntimeException(e);
+            System.out.println("SQLException при удалении таблицы: " + e.getMessage());
         }
     }
 
     public void saveUser(String name, String lastName, byte age) {
-        try (Connection connection = Util.getConnection();
-             Statement statement = connection.createStatement()) {
-            String sql = """
+        String sql = """
                 INSERT INTO user_profile (firstName, lastName, age)
-                VALUES (%s, %s, %d);
-                """.formatted("'" + name + "'", "'" + lastName + "'", age);
-            statement.execute(sql);
+                VALUES (?, ?, ?);
+                """;
+        try (Connection connection = Util.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, name);
+            statement.setString(2, lastName);
+            statement.setByte(3, age);
+            statement.executeUpdate();
             System.out.printf("User с именем — %s добавлен в базу данных\n", name);
         } catch (SQLException e) {
-            throw  new RuntimeException(e);
+            System.out.println("SQLException при добавлении пользователя: " + e.getMessage());
         }
     }
 
     public void removeUserById(long id) {
-        try (Connection connection = Util.getConnection();
-             Statement statement = connection.createStatement()) {
-            String sql = """
+        String sql = """
                 DELETE FROM user_profile
-                WHERE id = %d;
-                """.formatted(id);
-            statement.executeUpdate(sql);
+                WHERE id = ?;
+                """;
+        try (Connection connection = Util.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setLong(1, id);
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            throw  new RuntimeException(e);
+            System.out.println("SQLException при удалении пользователя по ID: " + e.getMessage());
         }
     }
 
     public List<User> getAllUsers() {
-        List<User> users = new ArrayList<>();
-        try (Connection connection = Util.getConnection();
-             Statement statement = connection.createStatement()) {
-            String sql = """
+        String sql = """
                 SELECT *
                 FROM user_profile;
                 """;
-            ResultSet executeResult = statement.executeQuery(sql);
+        List<User> users = new ArrayList<>();
+        try (Connection connection = Util.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            ResultSet executeResult = statement.executeQuery();
             while (executeResult.next()) {
                 String name = executeResult.getString("firstName");
                 String lastName = executeResult.getString("lastName");
@@ -88,7 +89,7 @@ public class UserDaoJDBCImpl implements UserDao {
                 users.add(user);
             }
         } catch (SQLException e) {
-            throw  new RuntimeException(e);
+            System.out.println("SQLException при получении списка всех пользователей: " + e.getMessage());
         }
         return users;
     }
@@ -97,11 +98,11 @@ public class UserDaoJDBCImpl implements UserDao {
         try (Connection connection = Util.getConnection();
              Statement statement = connection.createStatement()) {
             String sql = """
-                DELETE FROM user_profile;
+                TRUNCATE TABLE user_profile;
                 """;
             statement.executeUpdate(sql);
         } catch (SQLException e) {
-            throw  new RuntimeException(e);
+            System.out.println("SQLException при очистке таблицы: " + e.getMessage());
         }
     }
 }
