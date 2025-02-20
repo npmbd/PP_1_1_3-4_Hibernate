@@ -2,6 +2,7 @@ package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
+import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import java.util.List;
 
@@ -11,10 +12,12 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void createUsersTable() {
-        Session session = Util.getSessionFactory().openSession();
-        session.beginTransaction();
+        Session session = null;
+        try {
+            session = Util.getSessionFactory().openSession();
+            session.beginTransaction();
 
-        String sql = """
+            String sql = """
                     CREATE TABLE IF NOT EXISTS user_profile (
                     id BIGINT AUTO_INCREMENT,
                     firstName VARCHAR(128),
@@ -23,73 +26,162 @@ public class UserDaoHibernateImpl implements UserDao {
                     PRIMARY KEY (id)
                     );
                 """;
-        session.createSQLQuery(sql).executeUpdate();
-        session.getTransaction().commit();
-        session.close();
+
+            session.createSQLQuery(sql).executeUpdate();
+
+            session.getTransaction().commit();
+        } catch (HibernateException e) {
+            if (session != null) {
+                try {
+                    session.getTransaction().rollback();
+                } catch (HibernateException e1) {
+                    System.out.println("Ошибка при откате транзакции: " + e1.getMessage());
+                }
+            }
+            System.out.println("Ошибка при выполнении транзакции: " + e.getMessage());
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 
     @Override
     public void dropUsersTable() {
-        Session session = Util.getSessionFactory().openSession();
-        session.beginTransaction();
+        Session session = null;
+        try{
+            session = Util.getSessionFactory().openSession();
 
-        String sql = "DROP TABLE IF EXISTS user_profile;";
+            session.beginTransaction();
 
-        session.createSQLQuery(sql).executeUpdate();
-        session.getTransaction().commit();
-        session.close();
+            String sql = "DROP TABLE IF EXISTS user_profile;";
+
+            session.createSQLQuery(sql).executeUpdate();
+
+            session.getTransaction().commit();
+        } catch (HibernateException e) {
+            if (session != null) {
+                try {
+                    session.getTransaction().rollback();
+                } catch (HibernateException e1) {
+                    System.out.println("Ошибка при откате транзакции: " + e1.getMessage());
+                }
+            }
+            System.out.println("Ошибка при выполнении транзакции: " + e.getMessage());
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 
     @Override
-    public void saveUser(String name, String lastName, byte age) {
+    public void saveUser(String name, String lastName, byte age) { // save: HibernateException
         User user = new User(name, lastName, age);
+        Session session = null;
+        try {
+            session = Util.getSessionFactory().openSession();
+            session.beginTransaction();
 
-        Session session = Util.getSessionFactory().openSession();
-        session.beginTransaction();
+            session.save(user);
 
-        session.save(user);
-
-        session.getTransaction().commit();
-        session.close();
+            session.getTransaction().commit();
+        } catch (HibernateException e) {
+            if (session != null) {
+                try {
+                    session.getTransaction().rollback();
+                } catch (HibernateException e1) {
+                    System.out.println("Ошибка при откате транзакции: " + e1.getMessage());
+                }
+            }
+            System.out.println("Ошибка при выполнении транзакции: " + e.getMessage());
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 
     @Override
     public void removeUserById(long id) {
-        Session session = Util.getSessionFactory().openSession();
-        session.beginTransaction();
+        Session session = null;
+        try {
+            session = Util.getSessionFactory().openSession();
 
-        session.delete((User) session.get(User.class, id));
+            session.beginTransaction();
 
-        session.getTransaction().commit();
-        session.close();
+            session.createQuery("DELETE FROM User WHERE id = :id").setParameter("id", id).executeUpdate();
+
+            session.getTransaction().commit();
+        } catch (HibernateException e) {
+            if (session != null) {
+                try {
+                    session.getTransaction().rollback();
+                } catch (HibernateException e1) {
+                    System.out.println("Ошибка при откате транзакции: " + e1.getMessage());
+                }
+            }
+            System.out.println("Ошибка при выполнении транзакции: " + e.getMessage());
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 
     @Override
     public List<User> getAllUsers() {
-        Session session = Util.getSessionFactory().openSession();
-        session.beginTransaction();
+        Session session = null;
+        List<User> users = null;
 
-        String sql = """
-                SELECT *
-                FROM user_profile;
-                """;
-        List<User> users = session.createSQLQuery(sql).addEntity(User.class).list();
+        try {
+            session = Util.getSessionFactory().openSession();
+            session.beginTransaction();
 
-        session.getTransaction().commit();
-        session.close();
+            users = session.createQuery("from User").list();
 
+            session.getTransaction().commit();
+        } catch (HibernateException e) {
+            if (session != null) {
+                try {
+                    session.getTransaction().rollback();
+                } catch (HibernateException e1) {
+                    System.out.println("Ошибка при откате транзакции: " + e1.getMessage());
+                }
+            }
+            System.out.println("Ошибка при выполнении транзакции: " + e.getMessage());
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
         return users;
     }
 
     @Override
     public void cleanUsersTable() {
-        Session session = Util.getSessionFactory().openSession();
-        session.beginTransaction();
+        Session session = null;
+        try {
+            session = Util.getSessionFactory().openSession();
+            session.beginTransaction();
 
-        String sql = "TRUNCATE TABLE user_profile;";
-        session.createSQLQuery(sql).executeUpdate();
+            String sql = "TRUNCATE TABLE user_profile;";
+            session.createSQLQuery(sql).executeUpdate();
 
-        session.getTransaction().commit();
-        session.close();
+            session.getTransaction().commit();
+        } catch (HibernateException e) {
+            if (session != null) {
+                try {
+                    session.getTransaction().rollback();
+                } catch (HibernateException e1) {
+                    System.out.println("Ошибка при откате транзакции: " + e1.getMessage());
+                }
+            }
+            System.out.println("Ошибка при выполнении транзакции: " + e.getMessage());
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 }
